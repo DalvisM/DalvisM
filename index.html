@@ -1,28 +1,152 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-  <title>iframe-browser</title>
-  <link rel="stylesheet" type="text/css" href="style.css">
-  <script type="text/javascript" src="script.js"></script>
-</head>
-
-<body>
-  <div class="tab">
-    Address:&nbsp;<input type="text" id="address"></input>
-    <button onclick="load()" class="btn">Load</button>
-    <button onclick="newtab()" class="btn">New tab</button><br>
-    <div id="tabbtns">
-      <button class="btn active" onclick="openTab(1)" id="tabb1">Tab 1</button>
+  <head>
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="og:title" content="Digital Pottery" />
+    <meta property="og:description" content="Digital Pottery is the skill you didn't know you wanted" />
+    <meta property="og:image" content="https://cdn.glitch.com/a496a7ab-45c5-49f6-a084-fc87a2387963%2Fpottery.png" />
+    <meta property="twitter:image" content="https://cdn.glitch.com/a496a7ab-45c5-49f6-a084-fc87a2387963%2Fpottery.png" />
+    <title>Digital Pottery</title>
+    <script src="./js/bezier2d.js"></script>
+    <script src="./js/render3d.js" type="module"></script>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <center>
+    <h1>
+       🌲 Digital Pottery ⚱️
+    </h1>
+    <p>🚀 learn how to use it on <a href="https://youtu.be/HDsjLDZN9OA">YouTube</a> 🤓</p>
+    <p>
+        YES, you can literally tweet these 3D models!
+    </p>
+    <div style="display: flex; justify-content: center">
+      <input type="button" id="btnReset" value="Reset" />
+      <canvas
+        id="canvasPottery"
+        width="500"
+        height="500"
+        style="border:1px solid #d3d3d3;"
+      >
+        Your browser does not support the HTML5 canvas tag.</canvas
+      >
+      <div id="div_three" style="width: 500px; height: 500px">
+      </div>
+      <div style="margin: 5px; display: flex; flex-direction: column">
+        <input type="button" id="btnGen" value="Tweet this!" />
+        <br />
+        <input type="button" id="btnDownload" value="Download" />
+        <br />
+        <select id="selMaterials">
+        </select>
+      </div>
     </div>
-  </div>
-  <div id="tabs">
-    <div id="tab1" class="tabcontent" style="display:block">
-      <span onclick="close()" class="topright">[x]</span>
-      <span onclick="fullscreen(byId('iweb'+currentTab))" class="topright2">[+]</span>
-      <iframe src="" height="500" width="1000" id="iweb1" allowfullscreen></iframe>
-    </div>
-  </div>
-</body>
+      <br />
+      <br />
+      <p>
+        <small>this is an early PoC. if you like it or got suggestions, requests, feel free to message me</small>
+      </p>
+      <div style="display: inline-flex; padding: 5px">
+        <img src="https://cdn.glitch.com/a496a7ab-45c5-49f6-a084-fc87a2387963%2Ffavicon%5B1%5D.ico?v=1613125207951" />
+        <small><a id="aTwitter" href="https://twitter.com/high_byte">@high_byte</a></small>
+      </div>
+    </center>
+    
+    <script type="module">
+      import * as R3 from "./js/render3d.js"
+      import { GLTFExporter } from "./build/export_gltf.module.js"
 
+      let g_genMesh = null
+      
+      const mat_list = [
+        ["Default", "MeshLambertMaterial",{"color":"#df5000"}],
+        ["Zima Blue", "MeshLambertMaterial",{"color":"#5f50f0"}],
+        ["Fire", "MeshPhongMaterial",{"color":"#000000","specular":6710886,"emissive":16711680,"shininess":10,"opacity":0.9,"transparent":true}],
+        ["Glass", "MeshPhongMaterial",{"opacity":0.5,"transparent":true,"specular":6710886,"emissive":16711680,"shininess":10,}]
+      ]
+
+      function redraw() {
+        var sel = document.getElementById('selMaterials')
+        var points = g_drawer.getAllCurvePoints(20)
+        g_genMesh = R3.screw(points)
+        R3.replaceMesh(g_genMesh, mat_list[sel.selectedIndex])
+      }
+      
+      function genLink() {
+        var dump = dumpCurve()
+        var dpUrl = 'https://digital-pottery.glitch.me/?' + dump
+        var twitterUrl = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent('I made this #DigitalPottery: ' + dpUrl)
+        window.open(twitterUrl)
+      }
+      
+			const __link = document.createElement( 'a' );
+			__link.style.display = 'none';
+			document.body.appendChild( __link ); // Firefox workaround, see #6594
+
+			function save( blob, filename ) {
+				__link.href = URL.createObjectURL( blob );
+				__link.download = filename;
+				__link.click();
+			}
+      
+			function saveString( text, filename ) {
+				save( new Blob( [ text ], { type: 'text/plain' } ), filename );
+			}
+
+			function saveArrayBuffer( buffer, filename ) {
+				save( new Blob( [ buffer ], { type: 'application/octet-stream' } ), filename );
+			}
+
+      function download() {
+				const gltfExporter = new GLTFExporter();
+
+				const options = {
+					trs: false, //document.getElementById( 'option_trs' ).checked,
+					onlyVisible: true, //document.getElementById( 'option_visible' ).checked,
+					truncateDrawRange: false, //document.getElementById( 'option_drawrange' ).checked,
+					binary: true, //document.getElementById( 'option_binary' ).checked,
+					//maxTextureSize: Number( document.getElementById( 'option_maxsize' ).value ) || Infinity // To prevent NaN value
+				};
+				gltfExporter.parse( g_genMesh, function ( result ) {
+					if ( result instanceof ArrayBuffer ) {
+						saveArrayBuffer( result, 'scene.glb' );
+					} else {
+						const output = JSON.stringify( result, null, 2 );
+						saveString( output, 'scene.gltf' );
+					}
+				}, options );
+      }
+      
+      function resetCurve() {
+        g_drawer.curve = loadCurve('0,-134,-30,0,-30,-32,0,50,-33,11,25,5')
+        redraw()
+      }
+      
+      function onLoad() {
+        var sel = document.getElementById('selMaterials')
+        
+        for (var i in mat_list) {
+          var name = mat_list[i][0]
+          var opt = document.createElement('option')
+          opt.value = opt.innerText = name
+          sel.appendChild(opt)
+        }
+        
+        sel.addEventListener('input', redraw)
+        
+        btnReset.addEventListener('click', resetCurve)
+        btnGen.addEventListener('click', genLink)
+        btnDownload.addEventListener('click', download)
+        
+        redraw()
+      }
+      
+      window.addEventListener('load', onLoad)
+      document.getElementById("canvasPottery").addEventListener('mousemove', function(e) {
+        if (e.buttons > 0) {
+          redraw()
+        }
+      })
+    </script>
+  </body>
 </html>
